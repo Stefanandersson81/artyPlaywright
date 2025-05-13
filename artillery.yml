@@ -12,6 +12,5 @@ scenarios:
     testFunction: "testArtillery"
 
 phases:
-  - duration: 60       # 🕒 testet pågår i 60 sekunder
-    arrivalRate: 1     # 👥 starta 5 nya användare per sekund
-    rampTo: 10         # 📈 öka till 20 användare per sekund över tiden
+  - duration: 30
+    arrivalRate: 10
