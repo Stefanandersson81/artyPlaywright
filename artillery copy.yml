@@ -2,9 +2,16 @@ config:
   target: 'https://tillsynsportalentest.naturvardsverket.se/login'
   phases:
     - duration: 30
-      arrivalCount: 1
-      maxVusers: 2
+      arrivalRate: 1
       name: warmup phase
+    - duration: 30
+      arrivalRate: 1
+      rampTo: 3
+      name: ramp up to 10
+    - duration: 30
+      arrivalRate: 1
+      rampTo: 4
+      name: peak state 
 
   engines:
     playwright: { aggregateByName: true }

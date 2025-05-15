@@ -40,6 +40,7 @@ async function oppenSökning(page) {
     timeout: 5000,
   });
   await page.getByRole("link", { name: "Start" }).click();
+
 const andraTabellen = page.locator('.table-container').nth(1);
 await expect(andraTabellen).toBeVisible();
 //första raden finns
@@ -49,6 +50,7 @@ await expect(förstaRaden).toBeVisible();
 const statusCell = förstaRaden.locator('td').nth(1); // kolumn 2 = status
 await expect(statusCell).toContainText('I kö');
 console.log('✅ Status är "I kö"');
+
 //reload-loop för att vänta på "Bearbetar"
 const maxTimeoutMs = 60000;
 const startTime = Date.now();

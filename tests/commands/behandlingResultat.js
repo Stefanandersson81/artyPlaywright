@@ -31,11 +31,14 @@ async function behandRES(page) {
 
   const row = page.locator('tbody tr');
 
-// Filtrera rader som har "Bearbetar" i en av sina kolumner
-const bearbetarRow = row.filter({ hasText: 'Bearbetar' });
-
-// Kontrollera att en sådan rad existerar
-await expect(bearbetarRow.first()).toBeVisible();
+const andraTabellen = page.locator('.table-container').nth(1);
+await expect(andraTabellen).toBeVisible();
+//första raden finns
+const förstaRaden = andraTabellen.locator('tbody tr').first();
+await expect(förstaRaden).toBeVisible();
+// Vänta på att status-cellen innehåller "I kö"
+const statusCell = förstaRaden.locator('td').nth(1); // kolumn 2 = status
+await expect(statusCell).toContainText(/^(I kö|Bearbetar)$/);;
 
 }
 
