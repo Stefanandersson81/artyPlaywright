@@ -5,6 +5,15 @@ config:
       arrivalCount: 1
       maxVusers: 2
       name: warmup phase
+  plugins:
+    ensure: {}
+    metrics-by-endpoint: {}
+  apdex:
+    threshold: 100
+  ensure:
+    thresholds:
+      - http.response_time.99: 500
+      - http.response_time.95: 500
 
   engines:
     playwright: { aggregateByName: true }
@@ -12,7 +21,7 @@ config:
   
 scenarios:
   - name: "LASTTESTER"
-    engine: playwright
+    engine: playwright 
     testFunction: "testArtillery"
 
 
