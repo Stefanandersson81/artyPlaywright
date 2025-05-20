@@ -1,25 +1,23 @@
 config:
   target: 'https://tillsynsportalentest.naturvardsverket.se/login'
   phases:
-    - duration: 30
-      arrivalRate: 1
-      name: warmup phase
-    - duration: 30
-      arrivalRate: 1
-      rampTo: 3
-      name: ramp up to 10
-    - duration: 30
-      arrivalRate: 1
-      rampTo: 4
-      name: peak state 
-
+    - name: "warmup"
+      duration: 60      # 1 minute warmup
+      arrivalCount: 1   # 1 user
+    - name: "main: 3 users"
+      duration: 60      # 1 minute test
+      arrivalCount: 3   # 3 concurrent users
+    - name: "main: 10 users"
+      duration: 60      # 1 minute test
+      arrivalCount: 10  # 10 concurrent users
+  plugins:
+    metrics-by-endpoint: {}
   engines:
-    playwright: { aggregateByName: true }
+    playwright:
+      aggregateByName: true
   processor: "./tests/artillery/artillery.js"
-  
+
 scenarios:
   - name: "LASTTESTER"
     engine: playwright
     testFunction: "testArtillery"
-
-

@@ -4,9 +4,11 @@
   "main": "index.js",
   "scripts": {
     "arty": "npx artillery run artillery.yml --record",
+    "aws":"artillery run-fargate --task-role-namearn:aws:iam::840298254574:role/ArtilleryDistributedTestingFargateRole <script>",
     "test": "npx playwright test",
     "test:ui": "playwright test --ui",
-    "arty:report": "npx artillery report --output report.html"
+    "arty:report": "artillery run artillery.yml --output load-report.json",
+    "arty-parrarel": "npx playwright test tests/firstTest.spec.js --workers=2" 
   },
   "keywords": [],
   "author": "",

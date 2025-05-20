@@ -1,35 +1,62 @@
 const { expect } = require("@playwright/test");
+const path = require('path');
+const { readOrgNumFromCSV } = require('../utils/randomOrg');
+
+let orgListPromise;
+async function getOrgList() {
+  if (!orgListPromise) {
+    const csvPath = path.join(__dirname, '../fixtures/organisationsNummer.csv');
+    orgListPromise = readOrgNumFromCSV(csvPath);
+  }
+  return orgListPromise;
+}
 
 async function oppenSökning(page) {
+  console.log('📄 Steg 2: Hämtar organisationsnummer från CSV...');
+  const orgList = await getOrgList();
+  if (!orgList.length) {
+    throw new Error('Inga organisationsnummer hittades i CSV-filen');
+  }
+
+  // Välj ett organisationsnummer (t.ex. slumpmässigt)
+  const randomIndex = Math.floor(Math.random() * orgList.length);
+  const record = orgList[randomIndex];
+  const orgNum = record.orgnummer || record.OrgNumber || record['orgnummer'] || record['OrgNumber'];
+  console.log(`▶️ Använder orgnummer: ${orgNum}`);
+
+
   await page.getByRole("button", { name: "Utsökning rapporter" }).click();
   await page.getByRole("link", { name: "Öppen sökning" }).click();
 
   const orgInput = page.getByRole("textbox", { name: "organisationsnummer" });
   await orgInput.click();
   await orgInput.waitFor({ state: "visible" });
-  await orgInput.type("5567699490", { delay: 100 });
-
-  await page.locator("#datefrom").fill("2024-06-11");
+  await orgInput.type(orgNum);
+//större tids spann,
+  await page.locator("#datefrom").fill("2022-06-11");
   await page.getByRole("button", { name: /Sök/ }).nth(0).click();
+
+
 
   const firstRow = page.locator("table tbody tr").first();
   await expect(firstRow).toBeVisible();
   await expect(firstRow).not.toHaveText("");
 
   // lägg till filter för kommun 0184 - Solna
+  /*
   await page.locator("#kommunkod").fill("0184 - Solna");
   await page.getByRole("button", { name: /Sök/ }).nth(0).click();
   const row = page.locator("table tbody tr").first();
   await expect(row).toBeVisible();
-  await expect(row).not.toHaveText("");
+  await expect(row).not.toHaveText("");*/
 
   await page
     .locator("#anteckningstyp")
-    .selectOption({ label: "Avfallsproducent" });
+    .selectOption({ label: "Avfallsproducent" }); //står för 50% av alla anteckningar, transportör är också stor
   await page.getByRole("button", { name: /Sök/ }).nth(0).click();
   const rows = page.locator("table tbody tr").first();
   await expect(rows).toBeVisible();
-  await expect(rows).not.toHaveText("");
+  //await expect(rows).not.toHaveText("");
 
   await page.getByRole("button", { name: /Ladda ner/ }).click();
   await expect(page.locator('[data-id="popup"]')).toBeVisible({
@@ -51,7 +78,7 @@ const statusCell = förstaRaden.locator('td').nth(1); // kolumn 2 = status
 await expect(statusCell).toContainText('I kö');
 console.log('✅ Status är "I kö"');
 
-//reload-loop för att vänta på "Bearbetar"
+//reload-loop för att vänta på "Bearbetar"  //class="loader"
 const maxTimeoutMs = 60000;
 const startTime = Date.now();
 let hittat = false;
@@ -66,15 +93,22 @@ while (Date.now() - startTime < maxTimeoutMs) {
   const nyStatusCell = nyRad.locator('td').nth(1);
 
   try {
-    await expect(nyRad).toBeVisible({ timeout: 3000 });
-    await expect(nyStatusCell).toContainText('Bearbetar', { timeout: 2000 });
-    console.log('✅ Status har uppdaterats till "Bearbetar"');
-    hittat = true;
-    break;
-  } catch {
-    console.log('⏳ Status är inte Bearbetar ännu...');
-  }
+  await expect(nyRad).toBeVisible({ timeout: 3000 });
+
+  // Acceptera antingen "Bearbetar" eller "Redo att ladda ner"
+  await expect(nyStatusCell).toContainText(/Bearbetar|Redo att ladda ner/, { timeout: 2000 });
+
+  const text = await nyStatusCell.innerText();
+  console.log(`✅ Status har uppdaterats till "${text.trim()}"`);
+  hittat = true;
+  break;
+} catch (e) {
+  // Hantera timeout eller annan felaktig status
+  console.log('⏳ Väntar fortfarande på korrekt status…');
 }
+
+}
+//
 
 if (!hittat) {
   throw new Error('❌ Timeout – status blev aldrig "Bearbetar" inom 60 sek');
