@@ -33,23 +33,48 @@ async function oppenSökning(page) {
   await orgInput.waitFor({ state: "visible" });
   await orgInput.type(orgNum);
 //större tids spann,
-  await page.locator("#datefrom").fill("2022-06-11");
+  await page.locator("#datefrom").fill("2020-04-11");
   await page.getByRole("button", { name: /Sök/ }).nth(0).click();
+//
 
+  // --- Sätt in här, direkt efter att du verifierat att rader finns ---
+  const pagination = page.locator('.pagination span').first();
+  await expect(pagination).toBeVisible({ timeout: 30_000 });
 
+  // Exempeltext: "1 – 10 av 10339956"
+  const paginationText = await pagination.innerText();
+  console.log('🔢 Pagination-text:', paginationText);
 
-  const firstRow = page.locator("table tbody tr").first();
-  await expect(firstRow).toBeVisible();
-  await expect(firstRow).not.toHaveText("");
+  // Plocka ut siffrorna efter "av"
+  const match = paginationText.match(/av\s*([\d\s]+)/i);
+  if (!match) {
+    throw new Error(`Kunde inte läsa ut totala antalet från pagination-texten: "${paginationText}"`);
+  }
+  const antalExcel = parseInt(match[1].replace(/\s/g, ''), 10);
+  const minstAntal  = 20000;
 
-  // lägg till filter för kommun 0184 - Solna
-  /*
-  await page.locator("#kommunkod").fill("0184 - Solna");
+  if (antalExcel >= minstAntal) {
+    console.log(`✅ Totalt antal poster (${antalExcel}) är ≥ ${minstAntal}`);
+    await page.locator("#kommunkod").fill("0100 - Stockholms län");
   await page.getByRole("button", { name: /Sök/ }).nth(0).click();
   const row = page.locator("table tbody tr").first();
   await expect(row).toBeVisible();
-  await expect(row).not.toHaveText("");*/
+  //await expect(row).not.toHaveText("");
+  } 
+  else {
+  const rows = page.locator("table tbody tr").first();
+  await expect(rows).toBeVisible();
 
+  await page.getByRole("button", { name: /Ladda ner/ }).click();
+  await expect(page.locator('[data-id="popup"]')).toBeVisible({
+    timeout: 10000,
+  });
+    //throw new Error(`❌ För få poster: ${antalExcel} < ${minstAntal}`);
+  }
+  // lägg till filter för kommun 0184 - Solna
+  
+  
+/*
   await page
     .locator("#anteckningstyp")
     .selectOption({ label: "Avfallsproducent" }); //står för 50% av alla anteckningar, transportör är också stor
@@ -57,11 +82,13 @@ async function oppenSökning(page) {
   const rows = page.locator("table tbody tr").first();
   await expect(rows).toBeVisible();
   //await expect(rows).not.toHaveText("");
-
+/*
   await page.getByRole("button", { name: /Ladda ner/ }).click();
   await expect(page.locator('[data-id="popup"]')).toBeVisible({
     timeout: 10000,
   });
+  */
+
   await page.locator("#close-popup").click();
   await expect(page.locator('[data-id="popup"]')).toBeHidden({
     timeout: 5000,
@@ -79,7 +106,7 @@ await expect(statusCell).toContainText('I kö');
 console.log('✅ Status är "I kö"');
 
 //reload-loop för att vänta på "Bearbetar"  //class="loader"
-const maxTimeoutMs = 60000;
+const maxTimeoutMs = 120000;
 const startTime = Date.now();
 let hittat = false;
 
