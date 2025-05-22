@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test:aws": "artillery run-fargate --region eu-north-1 artillery.yml",
+    "test:aws": "DEBUG=artillery* artillery run-fargate --region eu-north-1 artillery.yml",
     "arty": "npx artillery run artillery.yml --record",
-    "aws":"artillery run-fargate --task-role-namearn:aws:iam::840298254574:role/ArtilleryDistributedTestingFargateRole <script>",
+    "aws":"AWS_SDK_LOAD_CONFIG=1 AWS_PROFILE=fargate-user artillery run-fargate --region eu-north-1 artillery.yml",
     "test": "npx playwright test",
     "test:ui": "playwright test --ui",
     "arty:report": "artillery run artillery.yml --output load-report.json",

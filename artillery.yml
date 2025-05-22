@@ -1,25 +1,35 @@
----
 config:
   target: 'https://tillsynsportalentest.naturvardsverket.se/login'
   phases:
-    - name: "single user 1min"
-      duration: 60
+    - name: "login phase"
+      duration: 30
       arrivalCount: 1
+      scenario: "login-search"
+
+    - name: "full-load phase"
+      duration: 30
+      arrivalCount: 1
+      scenario: "full-load-flow"
+
   plugins:
     metrics-by-endpoint: {}
-    # Du kan lägga till fler Artillery-plugins här om du vill (t.ex. summary, csv- eller influx-export)
   engines:
     playwright:
       aggregateByName: true
   processor: "./tests/artillery/artillery.js"
+  includeFiles:
+    - "tests/utils/csvReader.js"
+    - "tests/utils/randomOmBud.js"
+    - "tests/utils/randomOrg.js"
+    - "tests/fixtures/data.csv"
+    - "tests/fixtures/ombud.csv"
+    - "tests/fixtures/organisationsNummer.csv"
 
 scenarios:
-  # Scenario 1: bara login + sökning + logout
   - name: "login-search"
     engine: playwright
     testFunction: "testArtillery"
 
-  # Scenario 2: full-flödet med org-sökning, kopplingar, behandling osv.
   - name: "full-load-flow"
     engine: playwright
     testFunction: "testArtillery"

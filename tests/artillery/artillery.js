@@ -31,57 +31,61 @@ async function loadUsers() {
 }
 
 async function testArtillery(page, vuContext, events, test) {
-  const scenarioName = vuContext.scenario.name;
+  const scenarioName = vuContext.scenario.name; // "login-search" eller "full-load-flow"
   const userIndex    = globalVuIndex++;
   const allUsers     = await loadUsers();
   const user         = allUsers[userIndex];
   if (!user) throw new Error(`❌ Ingen användare för index=${userIndex}`);
 
   console.log(`🚀 [${scenarioName}] startar för ${user.username}`);
-  events.emit("counter", `user.${scenarioName}.STARTED`, 1);
+  events.emit('counter', `user.${scenarioName}.STARTED`, 1);
 
-  // --- Definiera dina två scenarion ---
-  const stepsLoginSearch = [
-    { name: "🔐 testLogin",      fn: () => testLogin(page, user.username, user.password), metric: "testLogin.duration" },
-    { name: "🔍 oppenSökning",   fn: () => oppenSökning(page),                         metric: "oppenSökning.duration" },
-    { name: "🔐 loggaUt",        fn: () => loggaUt(page, user.username),              metric: "loggaUt.duration" }
+  // Definiera steg för varje scenario
+  const loginOpenSearch = [
+    { name: '🔐 testLogin',    fn: () => testLogin(page, user.username, user.password), metric: 'testLogin.duration' },
+    { name: '🔍 oppenSökning', fn: () => oppenSökning(page),                  metric: 'oppenSökning.duration' },
+    { name: '🔐 loggaUt',      fn: () => loggaUt(page, user.username),         metric: 'loggaUt.duration' }
   ];
 
-  const stepsFullFlow = [
-    { name: "🔐 testLogin",      fn: () => testLogin(page, user.username, user.password), metric: "testLogin.duration" },
-    { name: "🔍 sokOrg",         fn: () => sokOrg(page),                                metric: "sokOrg.duration" },
-    { name: "🔍 sokKopplingar",  fn: () => sokKopplingar(page),                         metric: "sokKopplingar.duration" },
-    { name: "🔍 behandRES",      fn: () => behandRES(page),                             metric: "behandRES.duration" },
-    { name: "🔐 loggaUt",        fn: () => loggaUt(page, user.username),              metric: "loggaUt.duration" }
+  const fullFlowSteps = [
+    { name: '🔐 testLogin',      fn: () => testLogin(page, user.username, user.password), metric: 'testLogin.duration' },
+    { name: '🔍 sokOrg',         fn: () => sokOrg(page),                                metric: 'sokOrg.duration' },
+    { name: '🔍 sokKopplingar',  fn: () => sokKopplingar(page),                         metric: 'sokKopplingar.duration' },
+    { name: '🔍 behandRES',      fn: () => behandRES(page),                             metric: 'behandRES.duration' },
+    { name: '🔐 loggaUt',        fn: () => loggaUt(page, user.username),              metric: 'loggaUt.duration' }
   ];
 
-  // --- Välj steps baserat på scenario-name ---
-  const steps = scenarioName === "login-search"
-    ? stepsLoginSearch
-    : stepsFullFlow;
+  // Mappa scenario till steg
+  const scenarioSteps = {
+    'login-search': loginOpenSearch,
+    'full-load-flow': fullFlowSteps
+  };
 
-  // --- Kör stegen och spela in metrics ---
+  const steps = scenarioSteps[scenarioName];
+  if (!steps) throw new Error(`❌ Okänt scenario: ${scenarioName}`);
+
+  // Kör alla steg
   for (const step of steps) {
     await test.step(step.name, async () => {
       const start = Date.now();
       try {
         await step.fn();
-        events.emit("counter", `${step.name}.success`, 1);
+        events.emit('counter', `${step.name}.success`, 1);
       } catch (err) {
         console.error(`❌ ${step.name} failed:`, err);
-        events.emit("counter", `${step.name}.error`, 1);
-        events.emit("error", `${step.name}.failed`);
+        events.emit('counter', `${step.name}.error`, 1);
+        events.emit('error', `${step.name}.failed`);
       }
       const duration = Date.now() - start;
       console.log(`⏱ ${step.name} tog ${duration} ms`);
-      events.emit("histogram", step.metric, duration);
+      events.emit('histogram', step.metric, duration);
     });
   }
 
-  await test.step("🏁 Slut på testArtillery", async () => {
+  await test.step('🏁 Slut på testArtillery', async () => {
     console.log(`✅ [${scenarioName}] klart för ${user.username}`);
   });
-  events.emit("counter", `user.${scenarioName}.COMPLETED`, 1);
+  events.emit('counter', `user.${scenarioName}.COMPLETED`, 1);
 }
 
 module.exports = { testArtillery };
