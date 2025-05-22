@@ -10,6 +10,7 @@ const { behandRES } = require('../tests/commands/behandlingResultat');
 const { oppenSökning } = require('../tests/commands/oppenSökning');
 const { loggaUt } = require('../tests/commands/loggaUt');
 const { sokOrg } = require('../tests/commands/sokOrg');
+const { sokOmbud } = require('./commands/sokOmbud');
 
 function readCSVUsersSync(filePath) {
   const data = fs.readFileSync(filePath, 'utf-8');
@@ -46,6 +47,8 @@ for (const user of users) {
       await sokOrg(page);
       await sokKopplingar(page);
       await behandRES(page);
+      await sokOmbud(page);
+
       await loggaUt(page, user.username);
 
     }

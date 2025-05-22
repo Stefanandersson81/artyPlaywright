@@ -4,13 +4,11 @@ config:
     - name: "login phase"
       duration: 30
       arrivalCount: 1
-      scenario: "login-search"
-
+      scenarioName: "login-search"
     - name: "full-load phase"
       duration: 30
       arrivalCount: 1
-      scenario: "full-load-flow"
-
+      scenarioName: "full-load-flow"
   plugins:
     metrics-by-endpoint: {}
   engines:

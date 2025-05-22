@@ -2,7 +2,8 @@
     "yaml.schemas": {
         "https://www.artillery.io/schema.json": [
             "file:///Users/stefanandersson/Repos/davidPlaywright/artillery.yml",
-            "file:///Users/stefanandersson/Repos/davidPlaywright/artillery%20copy.yml"
+            "file:///Users/stefanandersson/Repos/davidPlaywright/artillery%20copy.yml",
+            "chat-editing-text-model:/Users/stefanandersson/Repos/davidPlaywright/artillery.yml?%7B%22kind%22%3A%22doc%22%2C%22documentId%22%3A%22modified-file-entry%3A%3A1%22%2C%22chatSessionId%22%3A%22a9eaf12b-a27b-4a5a-8b25-9b9d53c5df48%22%7D"
         ]
     }
 }

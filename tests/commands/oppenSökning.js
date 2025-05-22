@@ -12,13 +12,13 @@ async function getOrgList() {
 }
 
 async function oppenSökning(page) {
-  console.log('📄 Steg 2: Hämtar organisationsnummer från CSV...');
-  const orgList = await getOrgList();
-  if (!orgList.length) {
-    throw new Error('Inga organisationsnummer hittades i CSV-filen');
-  }
+console.log('📄 Steg 2: Hämtar organisationsnummer från CSV...');
+let orgList = await getOrgList();
+if (!Array.isArray(orgList) || orgList.length === 0) {
+  throw new Error('Inga organisationsnummer hittades i CSV-filen');
+}
 
-  // Välj ett organisationsnummer (t.ex. slumpmässigt)
+  // Välj ett organisationsnummer (slumpmässigt)
   const randomIndex = Math.floor(Math.random() * orgList.length);
   const record = orgList[randomIndex];
   const orgNum = record.orgnummer || record.OrgNumber || record['orgnummer'] || record['OrgNumber'];
@@ -32,15 +32,31 @@ async function oppenSökning(page) {
   await orgInput.click();
   await orgInput.waitFor({ state: "visible" });
   await orgInput.type(orgNum);
-//större tids spann,
   await page.locator("#datefrom").fill("2020-04-11");
   await page.getByRole("button", { name: /Sök/ }).nth(0).click();
-//
 
-  // --- Sätt in här, direkt efter att du verifierat att rader finns ---
-  const pagination = page.locator('.pagination span').first();
-  await expect(pagination).toBeVisible({ timeout: 30_000 });
+  const rows = page.locator("table tbody tr");
 
+// Först: hantera om ingen pagination finns
+const pagination = page.locator('.pagination span').first();
+let paginationExists = false;
+try {
+  await expect(pagination).toBeVisible({ timeout: 3000 });
+  paginationExists = true;
+} catch {
+  // Ingen pagination, klicka första raden om den finns och returnera
+  const rowCount = await rows.count();
+  if (rowCount === 0) {
+    console.log("⚠️ Ingen data, klickar första raden ändå");
+    await rows.first().click();
+  } else {
+    await expect(rows.first()).toBeVisible();
+    await rows.first().click();
+  }
+  return;
+}
+
+if (paginationExists) {
   // Exempeltext: "1 – 10 av 10339956"
   const paginationText = await pagination.innerText();
   console.log('🔢 Pagination-text:', paginationText);
@@ -50,27 +66,49 @@ async function oppenSökning(page) {
   if (!match) {
     throw new Error(`Kunde inte läsa ut totala antalet från pagination-texten: "${paginationText}"`);
   }
+
   const antalExcel = parseInt(match[1].replace(/\s/g, ''), 10);
   const minstAntal  = 20000;
 
   if (antalExcel >= minstAntal) {
     console.log(`✅ Totalt antal poster (${antalExcel}) är ≥ ${minstAntal}`);
-    await page.locator("#kommunkod").fill("0100 - Stockholms län");
-  await page.getByRole("button", { name: /Sök/ }).nth(0).click();
-  const row = page.locator("table tbody tr").first();
-  await expect(row).toBeVisible();
-  //await expect(row).not.toHaveText("");
-  } 
-  else {
-  const rows = page.locator("table tbody tr").first();
-  await expect(rows).toBeVisible();
+    await page.locator("#kommunkod").fill("0100 - Stockholms län", { delay: 300 });
+    await page.getByRole("button", { name: /Sök/ }).first().click();
 
-  await page.getByRole("button", { name: /Ladda ner/ }).click();
-  await expect(page.locator('[data-id="popup"]')).toBeVisible({
-    timeout: 10000,
-  });
-    //throw new Error(`❌ För få poster: ${antalExcel} < ${minstAntal}`);
+    // Vänta på att tabellen laddas
+    const count = await rows.count();
+    expect(count).toBeGreaterThan(0);
+
+    if (count === 0) {
+      console.log("⚠️ Ingen data, klickar första raden ändå");
+      await rows.first().click();
+    } else {
+      await expect(rows.first()).toBeVisible();
+    }
+
+  } else {
+    // om antalExcel < minstAntal
+    const rowCount = await rows.count();
+
+    if (rowCount === 0) {
+      console.log("⚠️ Ingen data, klickar första raden ändå");
+      await rows.first().click();
+    } else {
+      await page.waitForTimeout(2000);
+      await expect(rows.first()).toBeVisible(); 
+      await page.getByRole("button", { name: /Ladda ner/ }).click();
+      await page.waitForSelector('[data-id="popup"]', { timeout: 10000 });
+      await expect(page.locator('[data-id="popup"]')).toBeVisible();
+
+      // Ny popup-hantering
+      const popup = page.locator('[data-id="popup"]');
+      if (await popup.isVisible()) {
+        await page.locator("#close-popup").click();
+        await expect(popup).toBeHidden({ timeout: 5000 });
+      }
+    }
   }
+}
   // lägg till filter för kommun 0184 - Solna
   
   

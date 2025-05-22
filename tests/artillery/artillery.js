@@ -8,6 +8,7 @@ const { oppenSökning }    = require('../commands/oppenSökning');
 const fs                  = require('fs');
 const path                = require('path');
 const csv                 = require('csv-parser');
+const { sokOmbud } = require('../commands/sokOmbud');
 
 let users = [];
 let globalVuIndex = 0;
@@ -52,6 +53,7 @@ async function testArtillery(page, vuContext, events, test) {
     { name: '🔍 sokOrg',         fn: () => sokOrg(page),                                metric: 'sokOrg.duration' },
     { name: '🔍 sokKopplingar',  fn: () => sokKopplingar(page),                         metric: 'sokKopplingar.duration' },
     { name: '🔍 behandRES',      fn: () => behandRES(page),                             metric: 'behandRES.duration' },
+    { name: '🔍 sokOmbud',      fn: () => sokOmbud(page),                             metric: 'sokOmbud.duration' },
     { name: '🔐 loggaUt',        fn: () => loggaUt(page, user.username),              metric: 'loggaUt.duration' }
   ];
 
