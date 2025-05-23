@@ -1,42 +1,32 @@
 // artillery.js
-const { testLogin, getNextUser } = require('../commands/login'); // Lägg till denna rad
-const { sokOrg }          = require('../commands/sokOrg');
-const { sokKopplingar }   = require('../commands/sokKopplingar');
-const { behandRES }       = require('../commands/behandlingResultat');
-const { loggaUt }         = require('../commands/loggaUt');
-const { oppenSökning }    = require('../commands/oppenSökning');
-const fs                  = require('fs');
-const path                = require('path');
-const csv                 = require('csv-parser');
+const { testLogin } = require('../commands/login');
+const { sokOrg } = require('../commands/sokOrg');
+const { sokKopplingar } = require('../commands/sokKopplingar');
+const { behandRES } = require('../commands/behandlingResultat');
+const { loggaUt } = require('../commands/loggaUt');
+const { oppenSökning } = require('../commands/oppenSökning');
 const { sokOmbud } = require('../commands/sokOmbud');
 
-// Ta bort users/globalVuIndex/loadUsers – vi använder getNextUser istället
-
 async function testArtillery(page, vuContext, events, test) {
-  const scenarioName = vuContext.scenario.name; // "Open-search" eller "sok-Org-Kop-flow"
-  const user = getNextUser(); // Hämta användare från login.js
-  if (!user) throw new Error(`❌ Ingen användare tillgänglig från getNextUser()`);
+  const scenarioName = vuContext.scenario.name;
 
-  console.log(`🚀 [${scenarioName}] startar för ${user.username}`);
-  events.emit('counter', `user.${scenarioName}.STARTED`, 1);
+  console.log(`🚀 [${scenarioName}] startar`);
 
-  // Definiera steg för varje scenario
   const loginOpenSearch = [
-    { name: '🔐 testLogin',    fn: () => testLogin(page, user.username, user.password), metric: 'testLogin.duration' },
-    { name: '🔍 oppenSökning', fn: () => oppenSökning(page),                  metric: 'oppenSökning.duration' },
-    { name: '🔐 loggaUt',      fn: () => loggaUt(page, user.username),         metric: 'loggaUt.duration' }
+    { name: '🔐 testLogin',    fn: () => testLogin(page), metric: 'testLogin.duration' },
+    { name: '🔍 oppenSökning', fn: () => oppenSökning(page), metric: 'oppenSokning.duration' },
+    { name: '🔐 loggaUt',      fn: () => loggaUt(page), metric: 'loggaUt.duration' }
   ];
 
   const sokOrgKopflow = [
-    { name: '🔐 testLogin',      fn: () => testLogin(page, user.username, user.password), metric: 'testLogin.duration' },
-    { name: '🔍 sokOrg',         fn: () => sokOrg(page),                                metric: 'sokOrg.duration' },
-    { name: '🔍 sokKopplingar',  fn: () => sokKopplingar(page),                         metric: 'sokKopplingar.duration' },
-    { name: '🔍 behandRES',      fn: () => behandRES(page),                             metric: 'behandRES.duration' },
-    { name: '🔍 sokOmbud',      fn: () => sokOmbud(page),                             metric: 'sokOmbud.duration' },
-    { name: '🔐 loggaUt',        fn: () => loggaUt(page, user.username),              metric: 'loggaUt.duration' }
+    { name: '🔐 testLogin',      fn: () => testLogin(page), metric: 'testLogin.duration' },
+    { name: '🔍 sokOrg',         fn: () => sokOrg(page), metric: 'sokOrg.duration' },
+    { name: '🔍 sokKopplingar',  fn: () => sokKopplingar(page), metric: 'sokKopplingar.duration' },
+    { name: '🔍 behandRES',      fn: () => behandRES(page), metric: 'behandRES.duration' },
+    { name: '🔍 sokOmbud',       fn: () => sokOmbud(page), metric: 'sokOmbud.duration' },
+    { name: '🔐 loggaUt',        fn: () => loggaUt(page), metric: 'loggaUt.duration' }
   ];
 
-  // Mappa scenario till steg
   const scenarioSteps = {
     'Open-search': loginOpenSearch,
     'sok-Org-Kop-flow': sokOrgKopflow
@@ -45,7 +35,6 @@ async function testArtillery(page, vuContext, events, test) {
   const steps = scenarioSteps[scenarioName];
   if (!steps) throw new Error(`❌ Okänt scenario: ${scenarioName}`);
 
-  // Kör alla steg
   for (const step of steps) {
     await test.step(step.name, async () => {
       const start = Date.now();
@@ -64,7 +53,7 @@ async function testArtillery(page, vuContext, events, test) {
   }
 
   await test.step('🏁 Slut på testArtillery', async () => {
-    console.log(`✅ [${scenarioName}] klart för ${user.username}`);
+    console.log(`✅ [${scenarioName}] klart`);
   });
   events.emit('counter', `user.${scenarioName}.COMPLETED`, 1);
 }

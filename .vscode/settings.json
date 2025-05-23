@@ -2,10 +2,12 @@
     "yaml.schemas": {
         "https://www.artillery.io/schema.json": [
             "file:///Users/stefanandersson/Repos/davidPlaywright/artillery.yml",
-            "file:///Users/stefanandersson/Repos/davidPlaywright/artillery%20copy.yml",
             "chat-editing-text-model:/Users/stefanandersson/Repos/davidPlaywright/artillery.yml?%7B%22kind%22%3A%22doc%22%2C%22documentId%22%3A%22modified-file-entry%3A%3A1%22%2C%22chatSessionId%22%3A%22a9eaf12b-a27b-4a5a-8b25-9b9d53c5df48%22%7D",
             "chat-editing-text-model:/Users/stefanandersson/Repos/davidPlaywright/artillery.yml?%7B%22kind%22%3A%22doc%22%2C%22documentId%22%3A%22modified-file-entry%3A%3A5%22%2C%22chatSessionId%22%3A%220fcfec9e-9beb-4d81-967c-bb6e024906d4%22%7D",
-            "chat-editing-text-model:/Users/stefanandersson/Repos/davidPlaywright/artillery.yml?%7B%22kind%22%3A%22doc%22%2C%22documentId%22%3A%22modified-file-entry%3A%3A6%22%2C%22chatSessionId%22%3A%22f9fd1b38-64f9-4d4a-98a7-a9d81a52f36f%22%7D"
+            "chat-editing-text-model:/Users/stefanandersson/Repos/davidPlaywright/artillery.yml?%7B%22kind%22%3A%22doc%22%2C%22documentId%22%3A%22modified-file-entry%3A%3A6%22%2C%22chatSessionId%22%3A%22f9fd1b38-64f9-4d4a-98a7-a9d81a52f36f%22%7D",
+            "chat-editing-text-model:/Users/stefanandersson/Repos/davidPlaywright/artillery.yml?%7B%22kind%22%3A%22doc%22%2C%22documentId%22%3A%22modified-file-entry%3A%3A28%22%2C%22chatSessionId%22%3A%222f543dac-5e6e-414e-be5a-4842a80696c3%22%7D",
+            "file:///Users/stefanandersson/Repos/davidPlaywright/artillery%20copy.yml",
+            "file:///Users/stefanandersson/Repos/davidPlaywright/artillerSingle.yml"
         ]
     }
 }

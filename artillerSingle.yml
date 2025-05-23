@@ -5,7 +5,7 @@ config:
   engines:
     playwright:
       aggregateByName: true
-  processor: "./tests/artillery/artillery.js"
+  processor: "./tests/artillery/artillerSingle.js"
   includeFiles:
     - "tests/utils/csvReader.js"
     - "tests/utils/randomOmBud.js"
@@ -14,28 +14,25 @@ config:
     - "tests/fixtures/ombud.csv"
     - "tests/fixtures/organisationsNummer.csv"
 
-  # <-- FLYTTADE hit under config:
-  phases:
-    - name: "Warmup"
-      duration: 30
-      arrivalCount: 1
-      scenario: "Open-search"
-
-    - name: "Open-search phase"
-      duration: 60
-      arrivalCount: 10
-      scenario: "Open-search"
-
-    - name: "sok-Org-Kop-flow phase"
-      duration: 60
-      arrivalCount: 5
-      scenario: "sok-Org-Kop-flow"
+phases:
+  - name: "Warmup"
+    duration: 30
+    arrivalCount: 1
+    scenario: "Open-search"
+  - name: "Open-search phase"
+    duration: 60
+    arrivalCount: 10
+    scenario: "Open-search"
+  - name: "sok-Org-Kop-flow phase"
+    duration: 60
+    arrivalCount: 5
+    scenario: "sok-Org-Kop-flow"
 
 scenarios:
   - name: "Open-search"
     engine: playwright
-    testFunction: "testArtillery"
+    testFunction: "testArtillerySingle"
 
   - name: "sok-Org-Kop-flow"
     engine: playwright
-    testFunction: "testArtillery"
+    testFunction: "testArtillerySingle"

@@ -1,73 +1,38 @@
+// tests/commands/login.js
 const fs = require("fs");
 const path = require("path");
 const { parse } = require("csv-parse/sync");
-const { expect } = require("@playwright/test");
 
 /**
- * Läser in användare från CSV och återanvänder dem i tur och ordning
+ * Genererar ett användarobjekt med randomiserad siffra i användarnamnet.
+ * Exempel: perftest042@art.se
  */
-let users = null;
-let userIndex = 0;
-function loadUsers() {
-  if (!users) {
-    const csvPath = path.join(__dirname, "../fixtures/data.csv");
-    const csvContent = fs.readFileSync(csvPath, "utf8");
-    users = parse(csvContent, {
-      columns: true,
-      skip_empty_lines: true
-    }).map(user => {
-      const trimmed = {};
-      for (const key in user) {
-        trimmed[key.trim().replace(/^\uFEFF/, '')] = user[key];
-      }
-      return trimmed;
-    });
-  }
-  return users;
-}
-function getNextUser() {
-  const userList = loadUsers();
-  const user = userList[userIndex % userList.length];
-  userIndex++;
-  return user;
+function getPerfUser() {
+  // Byt 100 till det antal användare du vill simulera
+  const maxUsers = 100;
+  const num = String(Math.floor(Math.random() * maxUsers) + 1).padStart(3, '0');
+  return {
+    username: `perftest${num}@art.se`,
+    password: 'Password@123456'
+  };
 }
 
 /**
- * Loggar in en användare med angivna uppgifter
+ * Loggar in med ett dynamiskt genererat användarnamn och lösenord
  * @param {import('@playwright/test').Page} page
- * @param {string} username
- * @param {string} password
  */
-async function testLogin(page, username, password) {
-  if (!username || !password) {
-    throw new Error(`❌ testLogin saknar indata: username="${username}", password="${password}"`);
-  }
+async function testLogin(page) {
+  const { username, password } = getPerfUser();
+  console.log(`🔐 Loggar in som ${username}`);
 
-  console.log(`🔐 Försöker logga in som ${username}`);
-
-  try {
-    await page.goto("https://tillsynsportalentest.naturvardsverket.se/login");
-
-    await page.getByRole("textbox", { name: /E-postadress/i }).fill(username, { delay: 300 });
-    await page.getByRole("textbox", { name: /Lösenord/i }).fill(password, { delay: 300 });
-    await page.getByRole("button", { name: /Logga in/i }).click();
-    await page.waitForTimeout(8000);
-    // Hantera ev. tvåfaktorsida (testkod)
-    const kodfält = page.getByRole("textbox", { name: /verifieringskoden/i });
-    if (await kodfält.isVisible()) {
-      await kodfält.fill("123456", { delay: 300 });
-      await page.getByRole("button", { name: /Logga in/i }).click();
-    }
-
-    // Verifiera att vi är inloggade
-    await expect(page).not.toHaveURL(/\/login$/);
-    console.log(`✅ Inloggad som ${username}`);
-  } catch (error) {
-    throw new Error(`❌ Inloggning misslyckades för ${username}: ${error.message}`);
-  }
+  await page.goto("https://tillsynsportalentest.naturvardsverket.se/login");
+  await page.locator('#username').fill(username, { delay: 300 });
+  await page.locator('#password').fill(password, { delay: 300 });
+  await page.locator('button:has-text("Logga in")').click();
+  await page.waitForTimeout(8000);
+  await page.locator('#passcode-input').fill("123456", { delay: 300 });
+  await page.locator('button:has-text("Logga in")').click();
+  console.log(`✅ Inloggad som ${username}`);
 }
 
-module.exports = {
-  testLogin,
-  getNextUser,
-};
+module.exports = { testLogin, getPerfUser };

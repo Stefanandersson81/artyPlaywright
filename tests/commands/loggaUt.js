@@ -2,29 +2,34 @@
 const { expect } = require("@playwright/test");
 
 /**
- * Loggar ut från portalen baserat på dynamiskt användarnamn
+ * Loggar ut från portalen utan att behöva ange användarnamn.
  * @param {import('@playwright/test').Page} page 
- * @param {string} username - Ex: test1@art.se
  */
-async function loggaUt(page, username = '') {
+async function loggaUt(page) {
   try {
-    // Försök hitta användarmenyn via e-postprefix
-    const namnPrefix = username.split('@')[0];
-    const menuButton = await page.getByRole('button', { name: new RegExp(namnPrefix, 'i') });
+    // Försök hitta en menyknapp som brukar innehålla användaren
+    // (t.ex. Profil, Testare, Meny, Användare, eller avatar)
+    const menuButton = await page.getByRole('button', { name: /Profil|PerfTest|Meny|Användare/i });
 
     if (await menuButton.isVisible()) {
       await menuButton.click();
     } else {
-      // fallback: försök med generiska menyknappar
-      await page.getByRole('button', { name: /Profil|Testare|Meny|Användare/i }).click();
+      // Fallback: klicka på första synliga menyknapp
+      const allButtons = await page.getByRole('button').all();
+      for (const btn of allButtons) {
+        if (await btn.isVisible()) {
+          await btn.click();
+          break;
+        }
+      }
     }
 
     await page.getByRole('link', { name: /Logga ut/i }).click();
     await page.waitForURL('**/login', { timeout: 10000 });
     await expect(page).toHaveURL(/\/login$/);
-    console.log(`✅ ${username} loggades ut.`);
+    console.log(`✅ Utloggning lyckades.`);
   } catch (err) {
-    throw new Error(`❌ Misslyckades med utloggning för ${username}: ${err.message}`);
+    throw new Error(`❌ Misslyckades med utloggning: ${err.message}`);
   }
 }
 
