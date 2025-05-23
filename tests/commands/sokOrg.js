@@ -3,7 +3,7 @@ const path = require('path');
 const { readOrgNumFromCSV } = require('../utils/randomOrg');
 
 let orgListPromise;
-async function getOrgList() {
+async function getSokOrg() {
   if (!orgListPromise) {
     const csvPath = path.join(__dirname, '../fixtures/organisationsNummer.csv');
     orgListPromise = readOrgNumFromCSV(csvPath);
@@ -12,12 +12,11 @@ async function getOrgList() {
 }
 
 async function sokOrg(page) {
-  console.log('📄 Steg 2: Hämtar organisationsnummer från CSV...');
-  const orgList = await getOrgList();
+  console.log('Hämtar organisationsnummer från CSV...');
+  const orgList = await getSokOrg();
   if (!orgList.length) {
     throw new Error('Inga organisationsnummer hittades i CSV-filen');
   }
-
   // Välj ett organisationsnummer (t.ex. slumpmässigt)
   const randomIndex = Math.floor(Math.random() * orgList.length);
   const record = orgList[randomIndex];

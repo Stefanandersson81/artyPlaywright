@@ -1,5 +1,5 @@
 // artillery.js
-const { testLogin }       = require('../commands/login');
+const { testLogin, getNextUser } = require('../commands/login'); // Lägg till denna rad
 const { sokOrg }          = require('../commands/sokOrg');
 const { sokKopplingar }   = require('../commands/sokKopplingar');
 const { behandRES }       = require('../commands/behandlingResultat');
@@ -10,33 +10,12 @@ const path                = require('path');
 const csv                 = require('csv-parser');
 const { sokOmbud } = require('../commands/sokOmbud');
 
-let users = [];
-let globalVuIndex = 0;
-
-async function loadUsers() {
-  if (users.length) return users;
-  const csvPath = path.join(__dirname, '../fixtures/data.csv');
-  return new Promise((resolve, reject) => {
-    const result = [];
-    fs.createReadStream(csvPath)
-      .pipe(csv())
-      .on('data', row => {
-        const headers  = Object.keys(row);
-        const username = row.username || row['användarnamn'] || row.user || row.email || row[headers[0]];
-        const password = row.password || row['lösenord']   || row[headers[1]];
-        result.push({ username, password });
-      })
-      .on('end', () => { users = result; resolve(result); })
-      .on('error', reject);
-  });
-}
+// Ta bort users/globalVuIndex/loadUsers – vi använder getNextUser istället
 
 async function testArtillery(page, vuContext, events, test) {
-  const scenarioName = vuContext.scenario.name; // "login-search" eller "full-load-flow"
-  const userIndex    = globalVuIndex++;
-  const allUsers     = await loadUsers();
-  const user         = allUsers[userIndex];
-  if (!user) throw new Error(`❌ Ingen användare för index=${userIndex}`);
+  const scenarioName = vuContext.scenario.name; // "Open-search" eller "sok-Org-Kop-flow"
+  const user = getNextUser(); // Hämta användare från login.js
+  if (!user) throw new Error(`❌ Ingen användare tillgänglig från getNextUser()`);
 
   console.log(`🚀 [${scenarioName}] startar för ${user.username}`);
   events.emit('counter', `user.${scenarioName}.STARTED`, 1);
@@ -48,7 +27,7 @@ async function testArtillery(page, vuContext, events, test) {
     { name: '🔐 loggaUt',      fn: () => loggaUt(page, user.username),         metric: 'loggaUt.duration' }
   ];
 
-  const fullFlowSteps = [
+  const sokOrgKopflow = [
     { name: '🔐 testLogin',      fn: () => testLogin(page, user.username, user.password), metric: 'testLogin.duration' },
     { name: '🔍 sokOrg',         fn: () => sokOrg(page),                                metric: 'sokOrg.duration' },
     { name: '🔍 sokKopplingar',  fn: () => sokKopplingar(page),                         metric: 'sokKopplingar.duration' },
@@ -59,8 +38,8 @@ async function testArtillery(page, vuContext, events, test) {
 
   // Mappa scenario till steg
   const scenarioSteps = {
-    'login-search': loginOpenSearch,
-    'full-load-flow': fullFlowSteps
+    'Open-search': loginOpenSearch,
+    'sok-Org-Kop-flow': sokOrgKopflow
   };
 
   const steps = scenarioSteps[scenarioName];

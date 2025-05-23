@@ -3,7 +3,7 @@ const path = require('path');
 const { readOmBudFromCSV } = require('../utils/randomOmBud');
 
 let ombudLista;
-async function getOrgList() {
+async function getOmbudLista() {
   if (!ombudLista) {
     const csvPath = path.join(__dirname, '../fixtures/ombud.csv');
     ombudLista = readOmBudFromCSV(csvPath);
@@ -12,8 +12,8 @@ async function getOrgList() {
 }
 
 async function sokOmbud(page) {
-  console.log('📄 Steg 2: Hämtar ombud från CSV...');
-  const orgList = await getOrgList();
+  console.log('📄 Hämtar ombud från CSV...');
+  const orgList = await getOmbudLista();
   if (!orgList.length) {
     throw new Error('Inga ombud hittades i CSV-filen');
   }

@@ -1,14 +1,14 @@
 config:
   target: 'https://tillsynsportalentest.naturvardsverket.se/login'
   phases:
-    - name: "login phase"
-      duration: 30
-      arrivalCount: 1
-      scenarioName: "login-search"
-    - name: "full-load phase"
-      duration: 30
-      arrivalCount: 1
-      scenarioName: "full-load-flow"
+    - name: "Open-search phase"
+      duration: 1
+      arrivalCount: 100
+      scenarioName: "Open-search"
+    - name: "sok-Org-Kop-flow phase"
+      duration: 1
+      arrivalCount: 100
+      scenarioName: "sok-Org-Kop-flow"
   plugins:
     metrics-by-endpoint: {}
   engines:
@@ -24,10 +24,10 @@ config:
     - "tests/fixtures/organisationsNummer.csv"
 
 scenarios:
-  - name: "login-search"
+  - name: "Open-search"
     engine: playwright
     testFunction: "testArtillery"
 
-  - name: "full-load-flow"
+  - name: "sok-Org-Kop-flow"
     engine: playwright
     testFunction: "testArtillery"
