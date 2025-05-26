@@ -16,23 +16,23 @@ async function testArtillery(page, vuContext, events, test) {
       {
         name: "🔐 testLogin",
         fn: async () => {
-          // Kör login (testLogin internt emitterar både loginTime och verifyTime)
           await testLogin(page, { metrics: events });
+        },
+        metric: "loginTime",
+      },
+      {
+        name: "🔍 oppenSökning",
+        fn: async () => {
+          await oppenSökning(page, { metrics: events });
         },
         metric: null,
       },
       {
-        name: "🔍 oppenSökning",
-        fn: () => oppenSökning(page),
-        metric: "oppenSökning.duration",
-      },
-      {
         name: "🔐 loggaUt",
         fn: async () => {
-          // skicka med Artillerys events-objekt som context.metrics
           await loggaUt(page, { metrics: events });
         },
-        metric: null, // ingen extra wrapper-metrik
+        metric: "08_LoggaUt",
       },
     ],
     "sok-Org-Kop-flow": [
@@ -41,7 +41,7 @@ async function testArtillery(page, vuContext, events, test) {
         fn: async () => {
           await testLogin(page, { metrics: events });
         },
-        metric: null,
+        metric: "loginTime",
       },
       {
         name: "🔍 sokOrg",
@@ -66,7 +66,9 @@ async function testArtillery(page, vuContext, events, test) {
       },
       {
         name: "🔐 loggaUt",
-        fn: () => loggaUt(page),
+        fn: async () => {
+          await loggaUt(page, { metrics: events });
+        },
         metric: "loggaUt.duration",
       },
     ],

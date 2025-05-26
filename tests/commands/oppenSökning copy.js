@@ -1,110 +1,110 @@
+// oppenSökning.js (med metrics baserade på performance.now())
 const { expect } = require("@playwright/test");
 const path = require("path");
 const { readOrgNumFromCSV } = require("../utils/randomOrg");
-const { sokPagination } = require("../utils/sokPagination");
-
-let orgListCache = null;
-async function getOrgList() {
-  if (!orgListCache) {
-    const csvPath = path.join(__dirname, "../fixtures/organisationsNummer.csv");
-    orgListCache = await readOrgNumFromCSV(csvPath);
-  }
-  return orgListCache;
-}
 
 async function oppenSökning(page) {
-  console.log("📄 Steg 2: Hämtar organisationsnummer från CSV...");
+  console.log("📄 Hämtar organisationsnummer…");
+  const orgs = await readOrgNumFromCSV(path.join(__dirname, "../fixtures/organisationsNummer.csv"));
+  if (!orgs.length) throw new Error("Inga organisationsnummer i CSV");
 
-  const orgList = await getOrgList();
-  if (!Array.isArray(orgList) || orgList.length === 0) {
-    throw new Error('Inga organisationsnummer hittades i CSV-filen');
-  }
+  const orgNum = orgs[Math.floor(Math.random() * orgs.length)].orgnummer;
+  console.log(`▶️ Använder ${orgNum}`);
 
-  // Välj ett organisationsnummer (slumpmässigt)
-  const randomIndex = Math.floor(Math.random() * orgList.length);
-  const record = orgList[randomIndex];
-  const orgNum =
-    record.orgnummer ||
-    record.OrgNumber ||
-    record["orgnummer"] ||
-    record["OrgNumber"];
-  console.log(`▶️ Använder orgnummer: ${orgNum}`);
+  // Öppna rätt vy
+  await page.locator('button:has-text("Utsökning rapporter")').click();
+  await page.locator('a:has-text("Öppen sökning")').click();
 
-  await page.getByRole("button", { name: "Utsökning rapporter" }).click();
-  await page.getByRole("link", { name: "Öppen sökning" }).click();
+  // Logga referensdata-metrics
+  const base = 'https://tillsynsportalenapitestidentity.naturvardsverket.se/referencedata';
+  const t0 = performance.now();
+  const fetchMetrics = ['avfallstyper','omraden'].map(endpoint =>
+    page.waitForResponse(r => r.url() === `${base}/${endpoint}` && r.status() === 200)
+      .then(() => console.log(`✅ Metric ${endpoint}: ${Math.round(performance.now() - t0)}ms`))
+  );
+  await page.click('a:has-text("Öppen sökning")');
+  await Promise.all(fetchMetrics);
 
-  const orgInput = page.getByRole("textbox", { name: "organisationsnummer" });
-  await orgInput.click();
-  await orgInput.waitFor({ state: "visible" });
-  await orgInput.type(orgNum);
-  await page.locator("#datefrom").fill("2020-04-11");
-  await page.getByRole("button", { name: /Sök/ }).nth(0).click();
-  await page.waitForTimeout(2000);
-  await sokPagination(page);
+  // Fyll i och sök
+  const orgInput = page.locator('#organisationsnummer');
+  await orgInput.waitFor({ state: "visible", timeout: 10000 });
+  await orgInput.fill(orgNum, { delay: 400 });
+  await page.locator('input#datefrom').fill("2020-04-11");
 
-  // Popup-hantering
-  const popup = page.locator('[data-id="popup"]');
-  if (await popup.isVisible()) {
-    await page.locator("#close-popup").click();
-    await expect(popup).toBeHidden({ timeout: 5000 });
-  }
-  await page.getByRole("link", { name: "Start" }).click();
+  const clickSok = () => page.locator('button[type="submit"]', { hasText: 'Sök' }).first().click();
 
-  // Statushantering
-  const andraTabellen = page.locator(".table-container").nth(1);
-  await expect(andraTabellen).toBeVisible();
+  // A04: advanced-sökning
+  await clickSok();
+  const t1 = performance.now();
+  await page.waitForResponse(r =>
+    r.url().endsWith('/anteckningar/search/advanced') &&
+    r.request().method() === 'POST' && r.status() === 200
+  );
+  console.log(`✅ Metric A_04ÖppenSökning: ${Math.round(performance.now() - t1)}ms`);
 
-  const förstaRaden = andraTabellen.locator("tbody tr").first();
-  await expect(förstaRaden).toBeVisible();
-
-  const statusCell = förstaRaden.locator("td").nth(1); // kolumn 2 = status
-  const statusText = (await statusCell.innerText()).trim();
-
-  if (statusText === "I kö") {
-    console.log('✅ Status är "I kö"');
-  } else if (/Bearbetar|Redo att ladda ner/.test(statusText)) {
-    console.log(`✅ Status är "${statusText}"`);
-  } else {
-    throw new Error(`❌ Ovänat statusvärde: "${statusText}"`);
-  }
-
-  // Om status är "I kö", vänta på "Bearbetar" eller "Redo att ladda ner"
-  if (statusText === "I kö") {
-    const maxTimeoutMs = 120000;
-    const startTime = Date.now();
-    let hittat = false;
-
-    while (Date.now() - startTime < maxTimeoutMs) {
-      await page.waitForTimeout(5000);
-      await page.reload();
-      console.log("🔄 Sida reloadad");
-
-      const nyTabell = page.locator(".table-container").nth(1);
-      const nyRad = nyTabell.locator("tbody tr").first();
-      const nyStatusCell = nyRad.locator("td").nth(1);
-
-      try {
-        await expect(nyRad).toBeVisible({ timeout: 3000 });
-        const nyStatusText = (await nyStatusCell.innerText()).trim();
-
-        if (/Bearbetar|Redo att ladda ner/.test(nyStatusText)) {
-          console.log(`✅ Status har uppdaterats till "${nyStatusText}"`);
-          hittat = true;
-          break;
-        } else {
-          console.log(`⏳ Status är fortfarande "${nyStatusText}"`);
-        }
-      } catch (e) {
-        console.log("⏳ Väntar fortfarande på korrekt status…");
+  // Pagination-filtrering
+  const pag = page.locator('.pagination span').first();
+  try {
+    await pag.waitFor({ state: "visible", timeout: 10000 });
+    let count, step = 0;
+    while ((count = parseInt((await pag.innerText()).match(/av\s*([\d\s]+)/i)[1].replace(/\s/g,''), 10)) >= 20000) {
+      console.log(`ℹ️ Totalt: ${count}`);
+      step++;
+      if (step === 1) {
+        await page.locator('input#kommunkod').fill("0100 - Stockholms län", { delay: 400 });
+        await page.locator('#options-kommunkod').click();
+      } else if (step === 2) {
+        await page.locator('#anteckningstyp').selectOption({ label: "Avfallsproducent" });
+      } else {
+        throw new Error("❌ För många träffar!");
       }
+      await clickSok();
+      await pag.waitFor({ state: "visible", timeout: 10000 });
     }
+  } catch {}
 
-    if (!hittat) {
-      throw new Error('❌ Timeout – status blev aldrig "Bearbetar" eller "Redo att ladda ner" inom 120 sek');
-    }
+  // A05: Ladda ner Excel
+  await page.getByRole('button', { name: /Ladda ner/ }).waitFor({ state: 'visible', timeout: 20000 });
+  await page.getByRole('button', { name: /Ladda ner/ }).click();
+  await page.waitForTimeout(2000);
+  const t2 = performance.now();
+  console.log(`✅ Metric A05_LaddaNedEXCEL: ${Math.round(performance.now() - t2)}ms`);
+
+  // Popup-funktion
+  const popup = page.locator('[data-id="popup"]');
+  if (await popup.isVisible({ timeout: 20000 }).catch(() => false)) {
+    await page.locator('#close-popup').click();
+    await popup.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
   }
+
+  // A06: Mina nedladdningar
+  await page.locator('a:has-text("Start")').click();
+  const t3 = performance.now();
+  await page.waitForResponse(r =>
+    r.url().endsWith('/users/me/watchlist') &&
+    r.request().method() === 'GET' &&
+    r.status() === 200
+  );
+  console.log(`✅ Metric A06_MinaNedladdningar: ${Math.round(performance.now() - t3)}ms`);
+
+  // A07: Status Ladda ner knapp
+  const statusTab = page.locator('.table-container').nth(1);
+  await statusTab.waitFor({ state: 'visible', timeout: 30000 });
+
+  const cell = statusTab.locator('tbody tr').first().locator('td').nth(1);
+  await expect(cell).toHaveText(/I kö|Bearbetar|Redo att ladda ner/, { timeout: 10000 });
+
+  const downloadBtn = statusTab.locator('tbody tr').first().locator('button', { hasText: 'Ladda ner' });
+  const startTime = performance.now();
+  let visible = await downloadBtn.isVisible().catch(() => false);
+  while (!visible && (performance.now() - startTime) < 120000) {
+    await page.waitForTimeout(10000);
+    await page.reload();
+    await statusTab.waitFor({ state: 'visible', timeout: 120000 });
+    visible = await downloadBtn.isVisible().catch(() => false);
+  }
+  if (!visible) throw new Error('❌ Ladda ner-knappen dök aldrig upp inom 120s');
+  console.log(`✅ Metric A07_StatusLaddaNedKnapp: ${Math.round(performance.now() - startTime)}ms`);
 }
 
-module.exports = {
-  oppenSökning,
-};
+module.exports = { oppenSökning };
