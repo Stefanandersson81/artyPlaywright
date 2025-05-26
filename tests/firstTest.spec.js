@@ -5,22 +5,25 @@ const { sokKopplingar } = require('./commands/sokKopplingar');
 const { behandRES } = require('./commands/behandlingResultat');
 const { oppenSökning } = require('./commands/oppenSökning');
 const { loggaUt } = require('./commands/loggaUt');
-const { sokOrg } = require('./commands/sokOrg');
+const { sokVerksamhet } = require('./commands/sökVerksamhet');
 const { sokOmbud } = require('./commands/sokOmbud');
+
+// Dummy context to satisfy functions expecting context.metrics
+const noopContext = {};
 
 test.describe('Dynamiskt genererade användare', () => {
   test('1. ÖPPEN SÖK', async ({ page }) => {
-    await testLogin(page);
+    await testLogin(page, noopContext);
     await oppenSökning(page);
-    await loggaUt(page);
+    await loggaUt(page, noopContext);
   });
 
   test('2. SÖK verksamhet', async ({ page }) => {
-    await testLogin(page);
-    await sokOrg(page);
+    await testLogin(page, noopContext);
+    await sokVerksamhet(page, noopContext);
     await sokKopplingar(page);
-    await behandRES(page);
-    await sokOmbud(page);
-    await loggaUt(page);
+    await behandRES(page, noopContext);
+    //await sokOmbud(page);
+    await loggaUt(page, noopContext);
   });
 });

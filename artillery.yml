@@ -1,11 +1,48 @@
 config:
-  target: 'https://tillsynsportalentest.naturvardsverket.se/login'
-  plugins:
-    metrics-by-endpoint: {}
+  # Bas-URL utan path, Artillery lägger till resten via Playwright
+  target: 'https://tillsynsportalentest.naturvardsverket.se'
+  
+  # Definiera vilka custom-metriker som ska räknas som histogram
+  metrics:
+    histograms:
+      - name: loginTime
+        # Exempel-bucketer: under 100 ms, 300 ms, 500 ms, 1 s, 2 s, 5 s
+        buckets: [100, 300, 500, 1000, 2000, 5000]
+      - name: MFAVerifyTime
+        # Mindre intervall för 2FA-anropet
+        buckets: [50, 100, 200, 500, 1000]
+      - name: 08_LoggaUt       # Utloggning
+        buckets: [50, 100, 200, 500, 1000]
+      - name: omraden          # Referensdata - områden
+        buckets: [50, 100, 200, 500, 1000]
+      - name: avfallstyper     # Referensdata - avfallstyper
+        buckets: [50, 100, 200, 500, 1000]
+      - name: behandlingsmetoder # Referensdata - behandlingsmetoder
+        buckets: [50, 100, 200, 500, 1000]
+      - name: underkoder       # Referensdata - underkoder
+        buckets: [50, 100, 200, 500, 1000]
+      - name: B04_sokOrgNummer # Referensdata - verksamheter
+        buckets: [50, 100, 200, 500, 1000]
+      - name: B05_VisaRapport # Referensdata - verksamheter
+        buckets: [50, 100, 200, 500, 1000]
+      - name: B06_SokKopplingarVerksamhet # Referensdata - verksamheter
+        buckets: [50, 100, 200, 500, 1000]
+      - name: B07_SokOmbudVerksamhet # Referensdata - verksamheter
+        buckets: [50, 100, 200, 500, 1000]
+
+  # Playwright-plugin för att köra dina JS-steg
   engines:
     playwright:
       aggregateByName: true
+
+  # Eventuella andra plugins du använder
+  plugins:
+    metrics-by-endpoint: {}
+
+  # Pekar på din custom-processor med stegen
   processor: "./tests/artillery/artillery.js"
+
+  # Inkludera eventuella hjälp-skript
   includeFiles:
     - "tests/utils/csvReader.js"
     - "tests/utils/randomOmBud.js"
@@ -14,7 +51,7 @@ config:
     - "tests/fixtures/ombud.csv"
     - "tests/fixtures/organisationsNummer.csv"
 
-  # <-- FLYTTADE hit under config:
+  # Faser (warmup + test-faser)
   phases:
     - name: "Warmup"
       duration: 30
@@ -31,6 +68,7 @@ config:
       arrivalCount: 5
       scenario: "sok-Org-Kop-flow"
 
+# Definiera scenarierna som kör dina Playwright-funktioner
 scenarios:
   - name: "Open-search"
     engine: playwright
