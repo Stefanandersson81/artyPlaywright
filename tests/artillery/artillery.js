@@ -1,105 +1,59 @@
-// tests/artillery/artillery.js
-const { testLogin } = require("../commands/login");
+const { Inloggning } = require("../commands/loggarIn");
+const { oppenSökning } = require("../commands/oppenSökning");
+const { loggaUt } = require("../commands/loggaUt");
 const { sokVerksamhet } = require("../commands/sökVerksamhet");
 const { sokKopplingar } = require("../commands/sokKopplingar");
 const { behandRES } = require("../commands/behandlingResultat");
-const { loggaUt } = require("../commands/loggaUt");
-const { oppenSökning } = require("../commands/oppenSökning");
-const { sokOmbud } = require("../commands/sokOmbud");
 
 async function testArtillery(page, vuContext, events, test) {
   const scenarioName = vuContext.scenario.name;
-  console.log(`🚀 [${scenarioName}] startar`);
+  const iterations = 10;
 
   const scenarioSteps = {
     "Open-search": [
-      {
-        name: "🔐 testLogin",
-        fn: async () => {
-          await testLogin(page, { metrics: events });
-        },
-        metric: "loginTime",
-      },
-      {
-        name: "🔍 oppenSökning",
-        fn: async () => {
-          await oppenSökning(page, { metrics: events });
-        },
-        metric: null,
-      },
-      {
-        name: "🔐 loggaUt",
-        fn: async () => {
-          await loggaUt(page, { metrics: events });
-        },
-        metric: "08_LoggaUt",
-      },
+      { name: "testLogin", fn: () => Inloggning(page, vuContext, events, test) },
+      { name: "oppenSökning", fn: () => oppenSökning(page, vuContext, events, test) },
+      { name: "loggaUt", fn: () => loggaUt(page, vuContext, events) }
     ],
-    "sok-Org-Kop-flow": [
-      {
-        name: "🔐 testLogin",
-        fn: async () => {
-          await testLogin(page, { metrics: events });
-        },
-        metric: "loginTime",
-      },
-      {
-        name: "🔍 sokOrg",
-        fn: async () => {
-          await sokVerksamhet(page, { metrics: events });
-        },
-        metric: "sokOrg.duration",
-      },
-      {
-        name: "🔍 sokKopplingar",
-        fn: async () => {
-          await sokKopplingar(page, { metrics: events });
-        },
-        metric: "sokKopplingar.duration",
-      },
-      {
-        name: "🔍 behandRES",
-        fn: async () => {
-          await behandRES(page, { metrics: events });
-        },
-        metric: "behandRES.duration",
-      },
-      {
-        name: "🔐 loggaUt",
-        fn: async () => {
-          await loggaUt(page, { metrics: events });
-        },
-        metric: "loggaUt.duration",
-      },
+    "Verksamhet_Kopplingar_BehandllingsResultat": [
+      { name: "testLogin", fn: () => Inloggning(page, vuContext, events, test) },
+      { name: "sokVerksamhet", fn: () => sokVerksamhet(page, vuContext, events) },
+      { name: "sokKopplingar", fn: () => sokKopplingar(page, vuContext, events) },
+      { name: "behandRES", fn: () => behandRES(page, vuContext, events) },
+      { name: "loggaUt", fn: () => loggaUt(page, vuContext, events) }
     ],
   };
+
+  
 
   const steps = scenarioSteps[scenarioName];
   if (!steps) throw new Error(`❌ Okänt scenario: ${scenarioName}`);
 
-  for (const step of steps) {
-    await test.step(step.name, async () => {
+  for (let i = 1; i <= iterations; i++) {
+    const iterationStart = Date.now();
+    console.log(`🔁 Iteration ${i}/${iterations} för [${scenarioName}]`);
+
+    for (const step of steps) {
       const start = Date.now();
       try {
+        console.log(`▶️ Kör steg: ${step.name}`);
         await step.fn();
-        events.emit("counter", `${step.name}.success`, 1);
+        events.emit("counter", `step.${step.name}.success`, 1);
       } catch (err) {
         console.error(`❌ ${step.name} failed:`, err);
-        events.emit("counter", `${step.name}.error`, 1);
-        events.emit("error", `${step.name}.failed`);
+        events.emit("counter", `step.${step.name}.error`, 1);
+        events.emit("error", `step.${step.name}.failed`);
       }
       const duration = Date.now() - start;
       console.log(`⏱ ${step.name} tog ${duration} ms`);
-      if (step.metric) {
-        events.emit("histogram", step.metric, duration);
-      }
-    });
+    }
+
+    const iterationDuration = Date.now() - iterationStart;
+    events.emit("histogram", `iteration.${scenarioName}`, iterationDuration);
   }
 
-  await test.step("🏁 Slut på testArtillery", async () => {
-    console.log(`✅ [${scenarioName}] klart`);
-  });
-  events.emit("counter", `user.${scenarioName}.COMPLETED`, 1);
+  console.log(`✅ Slutförde ${iterations} iterationer av [${scenarioName}]`);
+  events.emit("counter", `scenario.${scenarioName}.completed`, 1);
 }
 
 module.exports = { testArtillery };

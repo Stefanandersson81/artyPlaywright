@@ -11,61 +11,67 @@ async function getOmbudLista() {
   return ombudLista;
 }
 
-async function sokOmbud(page) {
-  console.log('📄 Hämtar ombud från CSV...');
-  const orgList = await getOmbudLista();
-  if (!orgList.length) {
-    throw new Error('Inga ombud hittades i CSV-filen');
-  }
+async function sokOmbud(page, vuContext, events, test) {
+  const step = test?.step || (async (_name, fn) => await fn());
 
-  // Välj ett ombudsnummer (slumpmässigt)
-  const randomIndex = Math.floor(Math.random() * orgList.length);
-  const record = orgList[randomIndex];
-  const ombudNummer = record.ombud || record.ombud || record['ombud'] || record['ombud'];
-  console.log(`▶️ Använder ombudNummermer: ${ombudNummer}`);
+  await step("Hämta ombud från CSV", async () => {
+    console.log('📄 Hämtar ombud från CSV...');
+    const orgList = await getOmbudLista();
+    if (!orgList.length) {
+      throw new Error('Inga ombud hittades i CSV-filen');
+    }
 
-  // Navigera till söksidan
-  await page.getByRole('button', { name: 'Utsökning rapporter' }).click();
-  await page.getByRole('link', { name: 'Öppen sökning' }).click();
+    const randomIndex = Math.floor(Math.random() * orgList.length);
+    const record = orgList[randomIndex];
+    const ombudNummer = record.ombud || record['ombud'];
+    console.log(`▶️ Använder ombudNummermer: ${ombudNummer}`);
+    page.__testOmbud = ombudNummer;
+  });
 
-  // Fyll i och skicka sökningen
-  const orgInput = page.getByRole('textbox', { name: 'ombud' });
-  await orgInput.click();
-  await orgInput.waitFor({ state: 'visible' });
-  await orgInput.fill(ombudNummer);
-  await page.getByRole('button', { name: /Sök/ }).click();
-  await page.waitForTimeout(1000);
+  await step("Navigera till Öppen sökning och fyll i ombud", async () => {
+    await page.getByRole('button', { name: 'Utsökning rapporter' }).click();
+    await page.getByRole('link', { name: 'Öppen sökning' }).click();
 
-const maxTimeoutMs = 60000;
-const startTime = Date.now();
+    const orgInput = page.getByRole('textbox', { name: 'ombud' });
+    await orgInput.click();
+    await orgInput.waitFor({ state: 'visible' });
+    await orgInput.fill(page.__testOmbud);
+    await page.getByRole('button', { name: /Sök/ }).click();
+    await page.waitForTimeout(1000);
+  });
 
-while (Date.now() - startTime < maxTimeoutMs) {
-  await page.waitForTimeout(3000);
-  console.log('manuellt timeout 3 sek');
+  await step("Vänta på sökresultat och verifiera popup", async () => {
+    const maxTimeoutMs = 60000;
+    const startTime = Date.now();
+    let found = false;
 
-  const firstRow = page.locator('table tbody tr').first();
+    while (Date.now() - startTime < maxTimeoutMs) {
+      await page.waitForTimeout(3000);
+      console.log('manuellt timeout 3 sek');
 
-  try {
-    await expect(firstRow).toBeVisible({ timeout: 3000 });
-    break;
-  } catch {
-    console.log('hittar inget för sökning,ändra sökning');
-  }
-  
-}
+      const firstRow = page.locator('table tbody tr').first();
+      try {
+        await expect(firstRow).toBeVisible({ timeout: 3000 });
+        found = true;
+        break;
+      } catch {
+        console.log('hittar inget för sökning, ändra sökning');
+      }
+    }
 
+    if (!found) throw new Error("❌ Timeout - inga sökresultat för ombud");
 
-  // Verifiera att resultatet innehåller valt ombudNummer
-  const firstRow = page.locator('table tbody tr').first();
-  await expect(firstRow).toBeVisible();
-  await firstRow.click();
+    const firstRow = page.locator('table tbody tr').first();
+    await expect(firstRow).toBeVisible();
+    await firstRow.click();
 
-  console.log('✅ Verifierar popup och verksamhetsinfo');
-  await page.waitForSelector('[data-id="popup"]', { state: 'visible' });
-  console.log(ombudNummer);
-  await expect(page.locator('section#ombud')).toContainText(ombudNummer);
+    console.log('✅ Verifierar popup och verksamhetsinfo');
+    await page.waitForSelector('[data-id="popup"]', { state: 'visible' });
+    console.log(page.__testOmbud);
+    await expect(page.locator('section#ombud')).toContainText(page.__testOmbud);
 
-  await page.click('#close-popup');
+    await page.click('#close-popup');
+  });
 }
 
 module.exports = {

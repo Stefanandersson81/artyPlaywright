@@ -5,7 +5,7 @@
   "scripts": {
     "test:aws": "DEBUG=artillery* artillery run-fargate --region eu-north-1 artillery.yml",
     "arty": "npx artillery run artillery.yml --record",
-    "aws": "AWS_SDK_LOAD_CONFIG=1 AWS_PROFILE=fargate-user artillery run-fargate --region eu-north-1 artillery.yml",
+    "aws": "AWS_SDK_LOAD_CONFIG=1 AWS_PROFILE=fargate-user artillery run-fargate --region eu-north-1 artilleryDev.yml",
     "test": "npx playwright test",
     "test:ui": "playwright test --ui",
     "arty:report": "artillery run artillery.yml --output load-report.json",
