@@ -15,17 +15,21 @@ config:
     - "tests/fixtures/organisationsNummer.csv"
 
   phases:
-  - arrivalCount: 10
-    duration: 5m
-    name: Only 2 Users
-
+    - duration: 1m
+      arrivalRate: 20
+      rampTo: 2
+      name: ramp-up
+    - duration: 5m
+      arrivalRate: 30
+      rampTo: 5
+      name: Load Phase
       
       
 scenarios:
   - name: "Open-search"
     engine: playwright
     testFunction: "testArtillery" 
-    weight: 1
+    weight: 2
   - name: "Verksamhet_Kopplingar_BehandlingsResultat"
     engine: playwright
     testFunction: "testArtillery"

@@ -7,7 +7,10 @@
             "chat-editing-text-model:/Users/stefanandersson/Repos/davidPlaywright/artillery.yml?%7B%22kind%22%3A%22doc%22%2C%22documentId%22%3A%22modified-file-entry%3A%3A28%22%2C%22chatSessionId%22%3A%222f543dac-5e6e-414e-be5a-4842a80696c3%22%7D",
             "file:///Users/stefanandersson/Repos/davidPlaywright/test.yml",
             "file:///Users/stefanandersson/Repos/davidPlaywright/artillleryDev.yml",
-            "file:///Users/stefanandersson/Repos/davidPlaywright/artilleryDev.yml"
+            "file:///Users/stefanandersson/Repos/davidPlaywright/artilleryDev.yml",
+            "file:///Users/stefanandersson/Downloads/artilleryDev_UPDATED.yml",
+            "file:///Users/stefanandersson/Downloads/artilleryDev.yml",
+            "file:///Users/stefanandersson/Repos/davidPlaywright/artilleryDev%20copy.yml"
         ]
     }
 }
