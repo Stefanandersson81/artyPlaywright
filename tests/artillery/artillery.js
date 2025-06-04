@@ -26,27 +26,38 @@ async function testArtillery(page, vuContext, events, test) {
   const steps = scenarioSteps[scenarioName];
   if (!steps) throw new Error(`❌ Okänt scenario: ${scenarioName}`);
 
-  console.log(`🚀 Kör scenario: [${scenarioName}]`);
+  console.log(`🚀 Startar scenario-loop: [${scenarioName}]`);
 
+  const maxDurationMs = 30 * 60 * 1000; // Max 30 min per VU – justera om du vill matcha testets längd
   const startTime = Date.now();
-  for (const step of steps) {
-    const stepStart = Date.now();
-    try {
-      console.log(`▶️ Kör steg: ${step.name}`);
-      await step.fn();
-      events.emit("counter", `step.${step.name}.success`, 1);
-    } catch (err) {
-      console.error(`❌ ${step.name} failed:`, err);
-      events.emit("counter", `step.${step.name}.error`, 1);
-      events.emit("error", `step.${step.name}.failed`);
+  let iteration = 0;
+
+  while (Date.now() - startTime < maxDurationMs) {
+    iteration++;
+    console.log(`🔁 Iteration ${iteration} för scenario [${scenarioName}]`);
+
+    const scenarioStart = Date.now();
+    for (const step of steps) {
+      const stepStart = Date.now();
+      try {
+        console.log(`▶️ Kör steg: ${step.name}`);
+        await step.fn();
+        events.emit("counter", `step.${step.name}.success`, 1);
+      } catch (err) {
+        console.error(`❌ ${step.name} failed:`, err);
+        events.emit("counter", `step.${step.name}.error`, 1);
+        events.emit("error", `step.${step.name}.failed`);
+      }
+      const stepDuration = Date.now() - stepStart;
+      console.log(`⏱ ${step.name} tog ${stepDuration} ms`);
     }
-    const stepDuration = Date.now() - stepStart;
-    console.log(`⏱ ${step.name} tog ${stepDuration} ms`);
+
+    const scenarioDuration = Date.now() - scenarioStart;
+    events.emit("histogram", `scenario.${scenarioName}`, scenarioDuration);
+    events.emit("counter", `scenario.${scenarioName}.completed`, 1);
   }
 
-  const totalDuration = Date.now() - startTime;
-  events.emit("histogram", `scenario.${scenarioName}`, totalDuration);
-  events.emit("counter", `scenario.${scenarioName}.completed`, 1);
+  console.log(`🏁 Avslutar scenario-loop: [${scenarioName}] efter ${Date.now() - startTime} ms`);
 }
 
 module.exports = { testArtillery };

@@ -15,9 +15,20 @@ config:
     - "tests/fixtures/organisationsNummer.csv"
 
   phases:
-  - arrivalCount: 10
-    duration: 5m
-    name: Only 2 Users
+  # Warm-up: börja med 5 användare under 2 min
+  - duration: 2m
+    arrivalCount: 5
+    name: Warm-up – 5 användare på 2 min
+
+  # Load-test: öka till 100 användare över 10 min
+  - duration: 10m
+    arrivalCount: 95
+    name: Ramp-up – till, totalt 100 användare
+
+  # Stabil fas: 100 användare kör i loop i 30 min
+  - duration: 5m
+    arrivalCount: 0
+    name: Load steady – VU fortsätter i 5 min
 
       
       
@@ -25,8 +36,8 @@ scenarios:
   - name: "Open-search"
     engine: playwright
     testFunction: "testArtillery" 
-    weight: 1
+    weight: 70
   - name: "Verksamhet_Kopplingar_BehandlingsResultat"
     engine: playwright
     testFunction: "testArtillery"
-    weight: 1
+    weight: 30

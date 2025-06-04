@@ -9,9 +9,12 @@ const withTransactionTimer = async (transactionName, events, userActions) => {
     throw err;
   } finally {
     const duration = Date.now() - startedTime;
-    events.emit("histogram", transactionName, duration);
+    if (events?.emit) {
+      events.emit("histogram", transactionName, duration);
+    }
   }
 };
+
 
 async function behandRES(page, vuContext, events) {
   const behandPathPart = "/verksamheter/5560768516/behandlingsresultat";
@@ -23,23 +26,23 @@ async function behandRES(page, vuContext, events) {
   await orgInput.waitFor({ state: "visible", timeout: 10000 });
   await orgInput.click();
   await orgInput.fill("");
-  await orgInput.type("5560768516", { delay: 300 });
+  await orgInput.type("5560768516", { delay: 500 });
 
   await page.locator("header").filter({ hasText: "Sök verksamhet" }).getByRole("button").click();
-
   await page.getByRole("tab", { name: "Kopplingar verksamhet" }).click();
+  await page.waitForTimeout(1000);
   await page.getByRole("tab", { name: "Behandlingsresultat" }).click();
-
+  await page.waitForTimeout(1000);
   const orgInput1 = page.getByRole("textbox", { name: "Organisationsnummer" });
   await orgInput1.waitFor({ state: "visible", timeout: 10000 });
   await orgInput1.click();
   await orgInput1.fill("");
-  await orgInput1.type("5560768516", { delay: 300 });
+  await orgInput1.type("5560768516", { delay: 500 });
 
   await page.getByRole("button", { name: /Sök/ }).nth(0).click();
-
+  await page.waitForTimeout(2000);
   await page.locator("#franar").selectOption("2020");
-
+  await page.waitForTimeout(2000);
   await withTransactionTimer("B07_SokBehandlingsResultat", events, async () => {
     const responsePromise = page.waitForResponse(
       resp =>
@@ -53,7 +56,7 @@ async function behandRES(page, vuContext, events) {
     await responsePromise;
   });
 
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(5000);
 
   const resultPanel = page.getByRole("tabpanel", { name: "Behandlingsresultat" });
   await expect(resultPanel).toBeVisible({ timeout: 10000 });

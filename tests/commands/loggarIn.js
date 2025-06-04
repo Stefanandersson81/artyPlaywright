@@ -1,3 +1,5 @@
+const { expect } = require('@playwright/test');
+
 const withTransactionTimer = async (transactionName, events, userActions) => {
   const startedTime = Date.now();
   try {
@@ -7,9 +9,12 @@ const withTransactionTimer = async (transactionName, events, userActions) => {
     throw err;
   } finally {
     const difference = Date.now() - startedTime;
-    events.emit('histogram', transactionName, difference);
+    if (events?.emit) {
+      events.emit('histogram', transactionName, difference);
+    }
   }
 };
+
 
 function getSingleUser() {
   const maxUsers = 100;
@@ -37,6 +42,7 @@ async function Inloggning(page, vuContext, events, test) {
   );
   await page.locator('button:has-text("Logga in")').click();
   await loginPromise;
+  await page.waitForTimeout(8000); // Väntar i x sekunder
 
   await page.locator('#passcode-input').fill('123456');
 
@@ -48,10 +54,12 @@ async function Inloggning(page, vuContext, events, test) {
     );
     await page.locator('button:has-text("Logga in")').click();
     await verifyPromise;
-    await page.waitForSelector('text=E-tjänst Tillsynsportalen', { timeout: 5000 });
+    await expect(page.getByRole('link', { name: 'E-tjänst Tillsynsportalen' })).toBeVisible();
   });
 
-  console.log(`✅ Inloggad som ${username}`);
 }
 
-module.exports = { Inloggning, getSingleUser };
+module.exports = { 
+  Inloggning,
+  getSingleUser,
+};

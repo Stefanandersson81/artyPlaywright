@@ -11,9 +11,12 @@ const withTransactionTimer = async (transactionName, events, userActions) => {
     throw err;
   } finally {
     const duration = Date.now() - startedTime;
-    events.emit("histogram", transactionName, duration);
+    if (events?.emit) {
+      events.emit("histogram", transactionName, duration);
+    }
   }
 };
+
 
 let orgListPromise;
 async function getSokVerksamhet() {
@@ -50,11 +53,12 @@ async function sokVerksamhet(page, vuContext, events) {
     const promises = referenceEndpoints.map(e =>
       page.waitForResponse(
         resp => resp.url().includes(e.path) && resp.status() === 200,
-        { timeout: 10000 }
+        { timeout: 60000 }
       )
     );
     await Promise.all(promises);
   });
+  await page.waitForTimeout(5000); // Väntar i x sekunder
 
   await withTransactionTimer("B04_SökOrgnummer", events, async () => {
     const orgInput = page.getByRole('textbox', { name: 'Organisationsnummer' });
@@ -71,13 +75,13 @@ async function sokVerksamhet(page, vuContext, events) {
     await page.locator("header:has-text('Sök verksamhet')").getByRole('button').click();
     await notePromise;
   });
-
+  await page.waitForTimeout(3000);
   await withTransactionTimer("B05_VisaRapport", events, async () => {
     const firstRow = page.locator('table tbody tr').first();
     const startTime = Date.now();
 
     while (Date.now() - startTime < 60000) {
-      await page.waitForTimeout(3000);
+      
       try {
         await expect(firstRow).toBeVisible({ timeout: 3000 });
         break;
@@ -91,6 +95,8 @@ async function sokVerksamhet(page, vuContext, events) {
     }
 
     await firstRow.click();
+    
+
     await page.waitForSelector('[data-id="popup"]', { state: 'visible', timeout: 10000 });
     await expect(page.locator('#verksamhetsutovare')).toContainText(orgNum);
     await page.click('#close-popup');
@@ -103,6 +109,7 @@ async function sokVerksamhet(page, vuContext, events) {
     await firstRow.click();
     await reportPromise;
   });
+  await page.waitForTimeout(8000);
 }
 
 module.exports = { sokVerksamhet };

@@ -9,15 +9,19 @@ const withTransactionTimer = async (transactionName, events, userActions) => {
     throw err;
   } finally {
     const difference = Date.now() - startedTime;
-    events.emit("histogram", transactionName, difference);
+    if (events?.emit) {
+      events.emit("histogram", transactionName, difference);
+    }
   }
 };
+
 
 async function loggaUt(page, vuContext, events) {
   try {
     const menuButton = page.getByRole('button', { name: /Profil|PerfTest|Meny|Användare/i });
     if (await menuButton.isVisible({ timeout: 3000 })) {
       await menuButton.click();
+      await page.waitForTimeout(2000); // Väntar i x sekunder
     } else {
       const allButtons = await page.getByRole('button').all();
       for (const btn of allButtons) {
@@ -46,6 +50,8 @@ async function loggaUt(page, vuContext, events) {
     await expect(page).toHaveURL(/\/login$/);
     console.log(`✅ Utloggning lyckades och redirect klar.`);
   });
+    await page.waitForTimeout(10000); // Väntar i x sekunder
+
 }
 
 module.exports = { loggaUt };

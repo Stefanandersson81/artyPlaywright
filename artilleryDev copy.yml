@@ -15,14 +15,22 @@ config:
     - "tests/fixtures/organisationsNummer.csv"
 
   phases:
-    - duration: 1m
-      arrivalRate: 20
-      rampTo: 2
-      name: ramp-up
-    - duration: 5m
-      arrivalRate: 30
-      rampTo: 5
-      name: Load Phase
+  # Warm-up: börja med 2 användare under 2 min
+  - duration: 2m
+    arrivalCount: 2
+    name: Warm-up – 2 användare på 2 min
+
+  # Load-test: öka till 10 användare över 3 min
+  - duration: 3m
+    arrivalCount: 8
+    name: Ramp-up – 8 till, totalt 10 användare
+
+  # Stabil fas: 10 användare kör i loop i 30 min
+  - duration: 20m
+    arrivalCount: 0
+    name: Load steady – VU fortsätter i 30 min
+
+
       
       
 scenarios:
